@@ -40,6 +40,16 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
+  const [page, setPage] = useState('market')
+  const [sellerListings, setSellerListings] = useState([
+    { id: 'demo-1', title: 'Creative Portfolio Template', category: 'Digital products', price: 35, status: 'Active', views: 128 },
+    { id: 'demo-2', title: 'Brand Strategy Session', category: 'Services', price: 120, status: 'Draft', views: 46 },
+    { id: 'demo-3', title: 'Modern Desk Lamp', category: 'Physical goods', price: 75, status: 'Active', views: 83 },
+  ])
+  const [showListingForm, setShowListingForm] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newPrice, setNewPrice] = useState('')
+  const [newCategory, setNewCategory] = useState('Digital products')
 
   useEffect(() => {
     if (!supabase) return
@@ -94,9 +104,9 @@ export default function App() {
   return <div className="app-shell">
     <div className="announcement"><span>THE MARKETPLACE FOR WHAT'S NEXT</span><span>Buy it. Build it. Make it yours. <ArrowRight size={13}/></span></div>
     <header className="site-header">
-      <a className="wordmark" href="#" onClick={() => {setSelected(null);setCategory('Everything')}}>mixd<span>.</span></a>
+      <a className="wordmark" href="#" onClick={() => {setSelected(null);setCategory('Everything');setPage('market')}}>mixd<span>.</span></a>
       <nav className={mobileMenu ? 'main-nav open' : 'main-nav'}>
-        <a href="#explore" onClick={() => setMobileMenu(false)}>Explore</a><a href="#how-it-works" onClick={() => setMobileMenu(false)}>How it works</a><a href="#sell" onClick={() => setMobileMenu(false)}>Start selling</a>
+        <a href="#explore" onClick={() => {setPage('market');setMobileMenu(false)}}>Explore</a><button className="nav-dashboard" onClick={() => {setPage('seller');setSelected(null);setMobileMenu(false)}}>Seller studio</button><a href="#how-it-works" onClick={() => setMobileMenu(false)}>How it works</a><a href="#sell" onClick={() => setMobileMenu(false)}>Start selling</a>
       </nav>
       <div className="header-actions">
         {session ? <><span className="welcome-user">Hi, {profile?.display_name || session.user.email?.split('@')[0]}</span><button className="icon-button" aria-label="Sign out" onClick={signOut}><LogOut size={18}/></button></> :
@@ -106,7 +116,7 @@ export default function App() {
       </div>
     </header>
 
-    {selected ? <main className="detail-page">
+    {page === 'seller' ? <main className="seller-dashboard"><div className="dashboard-heading"><div><span className="eyebrow">YOUR SPACE ON MIXD</span><h1>Seller studio<span>.</span></h1><p>Manage your listings and keep an eye on how your shop is doing.</p></div><button className="primary-button" onClick={() => setShowListingForm(!showListingForm)}><Plus size={17}/>{showListingForm ? 'Close form' : 'Create a listing'}</button></div><div className="seller-stats"><div><span>LISTINGS</span><b>{sellerListings.length}</b><small>Across your shop</small></div><div><span>ACTIVE LISTINGS</span><b>{sellerListings.filter(x=>x.status==='Active').length}</b><small>Visible to buyers</small></div><div><span>SHOP VIEWS</span><b>{sellerListings.reduce((n,x)=>n+x.views,0).toLocaleString()}</b><small>Demo analytics</small></div><div><span>SALES</span><b>—</b><small>Payments not connected</small></div></div>{showListingForm && <form className="listing-create-form" onSubmit={e=>{e.preventDefault();setSellerListings(old=>[{id:'local-'+Date.now(),title:newTitle,category:newCategory,price:Number(newPrice),status:'Draft',views:0},...old]);setNewTitle('');setNewPrice('');setShowListingForm(false)}}><h2>New listing</h2><label>Listing title<input required minLength="3" maxLength="100" value={newTitle} onChange={e=>setNewTitle(e.target.value)} placeholder="What are you offering?"/></label><div className="form-two"><label>Category<select value={newCategory} onChange={e=>setNewCategory(e.target.value)}><option>Physical goods</option><option>Digital products</option><option>Services</option><option>Websites & apps</option><option>Art & design</option></select></label><label>Price (USD)<input required type="number" min="0" step="0.01" value={newPrice} onChange={e=>setNewPrice(e.target.value)} placeholder="0.00"/></label></div><button className="primary-button" type="submit">Save as draft <ArrowRight size={16}/></button><small>Saved in this demo session only. Connect Supabase later to publish and store listings.</small></form>}<div className="seller-list-head"><div><span className="eyebrow">SHOP INVENTORY</span><h2>Your listings</h2></div><span>{sellerListings.length} ITEMS</span></div><div className="seller-table">{sellerListings.map(item=><div className="seller-row" key={item.id}><div className="seller-list-thumb"><ShoppingBag size={18}/></div><div className="seller-list-name"><b>{item.title}</b><small>{item.category}</small></div><b className="seller-list-price">{money(item.price)}</b><span className={item.status==='Active'?'status-active':'status-draft'}>{item.status}</span><span className="seller-views">{item.views} views</span><button className="text-action" onClick={()=>setSellerListings(old=>old.map(x=>x.id===item.id?{...x,status:x.status==='Active'?'Paused':'Active'}:x))}>{item.status==='Active'?'Pause':'Activate'}</button></div>)}</div><button className="back-link" onClick={()=>setPage('market')}>← Back to marketplace</button></main> : selected ? <main className="detail-page">
       <button className="back-link" onClick={() => setSelected(null)}>← Back to explore</button>
       <div className="detail-layout"><img className="detail-image" src={selected.image} alt={selected.title}/>
         <div className="detail-copy"><span className="eyebrow">{selected.category} · {selected.type}</span><h1>{selected.title}</h1><div className="rating">★ {selected.rating} <span>({selected.reviews} reviews)</span></div><div className="detail-price">{money(selected.price)}</div><p>{selected.description}</p><div className="seller-card"><div className="seller-avatar">{selected.seller.slice(0,1)}</div><div><b>{selected.seller}</b><small>{selected.location}</small></div><ShieldCheck size={19}/></div><button className="primary-button full" onClick={() => {setAuthMode('login');setAuthOpen(true)}}>Contact seller <ArrowRight size={17}/></button><small className="secure-note"><ShieldCheck size={14}/> Keep your conversations and transactions safe on MIXD.</small></div>
