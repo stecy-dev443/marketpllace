@@ -27,6 +27,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('Featured')
   const [favorites, setFavorites] = useState([])
+  const [showSaved, setShowSaved] = useState(false)
   const [selected, setSelected] = useState(null)
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('signup')
@@ -55,12 +56,13 @@ export default function App() {
 
   const visible = useMemo(() => {
     let items = listings.filter(item => (category === 'Everything' || item.category === category) &&
+      (!showSaved || favorites.includes(item.id)) &&
       (item.title + item.seller + item.category + item.description).toLowerCase().includes(query.toLowerCase()))
     if (sort === 'Price: low to high') items = [...items].sort((a,b) => a.price-b.price)
     if (sort === 'Price: high to low') items = [...items].sort((a,b) => b.price-a.price)
     if (sort === 'Top rated') items = [...items].sort((a,b) => Number(b.rating)-Number(a.rating))
     return items
-  }, [category, query, sort])
+  }, [category, query, sort, showSaved, favorites])
 
   const toggleFavorite = id => setFavorites(old => old.includes(id) ? old.filter(x => x !== id) : [...old, id])
   const submitAuth = async event => {
@@ -113,9 +115,9 @@ export default function App() {
 
       <section className="market-section" id="explore"><div className="section-heading"><div><span className="eyebrow">THE MIXD EDIT</span><h2>Explore the good stuff<span>.</span></h2><p>From one-of-a-kind finds to ideas ready to take off.</p></div><span className="result-count">{visible.length.toString().padStart(2,'0')} FINDS</span></div>
         <div className="search-row"><div className="search-box"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search anything. Seriously, anything."/><kbd>⌕</kbd></div><label className="sort-box"><SlidersHorizontal size={17}/><select value={sort} onChange={e=>setSort(e.target.value)}><option>Featured</option><option>Price: low to high</option><option>Price: high to low</option><option>Top rated</option></select><ChevronDown size={15}/></label></div>
-        <div className="category-row">{categories.map(({name,icon:Icon})=><button key={name} className={category===name?'category-chip active':'category-chip'} onClick={()=>setCategory(name)}><Icon size={16}/>{name}</button>)}</div>
+        <div className="category-row">{categories.map(({name,icon:Icon})=><button key={name} className={!showSaved && category===name?'category-chip active':'category-chip'} onClick={()=>{setCategory(name);setShowSaved(false)}}><Icon size={16}/>{name}</button>)}<button className={showSaved?'category-chip active':'category-chip'} onClick={()=>setShowSaved(!showSaved)}><Heart size={16}/>Saved ({favorites.length})</button></div>
         <div className="listing-grid">{visible.map(item=><article className="listing-card" key={item.id}><button className="listing-image" onClick={()=>setSelected(item)}><img src={item.image} alt={item.title}/><span className="image-tag">{item.tag}</span></button><button className={favorites.includes(item.id)?'favorite-button saved':'favorite-button'} aria-label="Save listing" onClick={()=>toggleFavorite(item.id)}><Heart size={17} fill={favorites.includes(item.id)?'currentColor':'none'}/></button><div className="listing-info"><div className="listing-meta"><span>{item.category}</span><span>★ {item.rating}</span></div><button className="listing-title" onClick={()=>setSelected(item)}>{item.title}</button><div className="listing-footer"><div><b>{money(item.price)}</b><small>by {item.seller}</small></div><button className="arrow-button" onClick={()=>setSelected(item)} aria-label={'View '+item.title}><ArrowRight size={18}/></button></div></div></article>)}</div>
-        {visible.length===0&&<div className="empty-state"><Search size={28}/><h3>No matches just yet.</h3><p>Try another search or browse all categories.</p><button onClick={()=>{setQuery('');setCategory('Everything')}}>Clear filters</button></div>}
+        {visible.length===0&&<div className="empty-state"><Search size={28}/><h3>No matches just yet.</h3><p>Try another search or browse all categories.</p><button onClick={()=>{setQuery('');setCategory('Everything');setShowSaved(false)}}>Clear filters</button></div>}
       </section>
       <section className="sell-banner" id="sell"><div className="banner-icon"><Sparkles size={24}/></div><div><span className="eyebrow">YOUR THING. YOUR TERMS.</span><h2>Have something worth sharing?</h2><p>Turn your products, skills or digital creations into your next opportunity.</p></div><button onClick={()=>{setAuthMode('signup');setRole('seller');setAuthOpen(true)}}>Start selling <ArrowRight size={17}/></button></section>
       <section className="how-section" id="how-it-works"><span className="eyebrow">SIMPLE BY DESIGN</span><h2>Good things happen when<br/>everything comes together.</h2><div className="how-grid"><div><span>01</span><ShoppingBag/><h3>Discover</h3><p>Browse physical goods, digital products, websites and services in one place.</p></div><div><span>02</span><UserRound/><h3>Connect</h3><p>Find the right person behind the listing and start a conversation.</p></div><div><span>03</span><CheckCircle2/><h3>Make it yours</h3><p>Bring a good find, a new skill or a fresh idea into your world.</p></div></div></section>
